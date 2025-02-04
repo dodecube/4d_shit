@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>shit</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden;
+            background: #000;
+        }
+        canvas { 
+            display: block; 
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Инициализация сцены, камеры и рендерера
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+            60, 
+            window.innerWidth / window.innerHeight, 
+            0.1, 
+            1000
+        );
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true 
+        });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Настройка камеры
+        camera.position.set(0, 0.3, 12);
+
+        // Создание фигур
+        const createCube = (size, color) => {
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            return new THREE.Mesh(geometry, material);
+        };
+
+        const createDodecahedron = (size, color) => {
+            const geometry = new THREE.DodecahedronGeometry(size);
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            return new THREE.Mesh(geometry, material);
+        };
+
+        // Инициализация объектов
+        const figures = [
+            {
+                mesh: createCube(5, 0xffffff),
+                speed: 2.0,
+                scale: 1.0
+            },
+            {
+                mesh: createCube(3.5, 0xffffff),
+                speed: 2.0,
+                scale: 1.0
+            },
+            {
+                mesh: createDodecahedron(2.0, 0xffffff),
+                speed: 2.0,
+                scale: 1.0,
+                colorPhase: 0,
+                colorSpeed: 0.3
+            }
+        ];
+
+        // Добавление объектов на сцену
+        figures.forEach(fig => scene.add(fig.mesh));
+
+        // Цветовая функция HSV -> RGB
+        const hsvToRgb = (h, s, v) => {
+            const i = Math.floor(h * 6);
+            const f = h * 6 - i;
+            const p = v * (1 - s);
+            const q = v * (1 - f * s);
+            const t = v * (1 - (1 - f) * s);
+            
+            switch(i % 6) {
+                case 0: return [v, t, p];
+                case 1: return [q, v, p];
+                case 2: return [p, v, t];
+                case 3: return [p, q, v];
+                case 4: return [t, p, v];
+                case 5: return [v, p, q];
+            }
+        };
+
+        // Анимация
+        const animate = () => {
+            requestAnimationFrame(animate);
+
+            figures.forEach((fig, idx) => {
+                // Вращение
+                fig.mesh.rotation.x += fig.speed * 0.01;
+                fig.mesh.rotation.y += fig.speed * 0.01;
+
+                // Цветовая анимация для додекаэдра
+                if(idx === 2) {
+                    fig.colorPhase = (fig.colorPhase + 0.01 * fig.colorSpeed) % 1;
+                    const [r, g, b] = hsvToRgb(fig.colorPhase, 0.9, 1);
+                    fig.mesh.material.color.setRGB(r, g, b);
+                }
+            });
+
+            renderer.render(scene, camera);
+        };
+
+        // Обработка изменения размера окна
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
